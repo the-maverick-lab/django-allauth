@@ -18,6 +18,7 @@ class Authenticator(models.Model):
     class Type(models.TextChoices):
         RECOVERY_CODES = "recovery_codes", _("Recovery codes")
         TOTP = "totp", _("TOTP Authenticator")
+        WEBAUTHN = "webauthn", _("WebAuthn")
 
     objects = AuthenticatorManager()
 
@@ -36,13 +37,13 @@ class Authenticator(models.Model):
     def wrap(self):
         from allauth.mfa.recovery_codes import RecoveryCodes
         from allauth.mfa.totp import TOTP
+        from allauth.mfa.webauthn import WebAuthn
 
         return {
             self.Type.TOTP: TOTP,
             self.Type.RECOVERY_CODES: RecoveryCodes,
-        }[
-            self.type
-        ](self)
+            self.Type.WEBAUTHN: WebAuthn,
+        }[self.type](self)
 
     def record_usage(self):
         self.last_used_at = timezone.now()
