@@ -47,7 +47,7 @@ class AuthenticateForm(forms.Form):
                 passed = True
                 break
         if not passed and app_settings.EMAIL_OTP and self.stage:
-            passed = otp.validate_code(code, self.stage.state)
+            passed = otp.validate_code(self.user, self.stage.state, code)
 
         if passed:
             ratelimit.clear(context.request, action="login_failed", user=self.user)

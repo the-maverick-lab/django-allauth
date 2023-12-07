@@ -587,6 +587,12 @@ class DefaultAccountAdapter(object):
     def should_send_confirmation_mail(self, request, email_address, signup):
         from allauth.account.models import EmailConfirmation
 
+        if signup and allauth_app_settings.MFA_ENABLED:
+            from allauth.mfa import app_settings as mfa_app_settings
+
+            if mfa_app_settings.EMAIL_OTP:
+                return False
+
         cooldown_period = timedelta(seconds=app_settings.EMAIL_CONFIRMATION_COOLDOWN)
         if app_settings.EMAIL_CONFIRMATION_HMAC:
             send_email = ratelimit.consume(

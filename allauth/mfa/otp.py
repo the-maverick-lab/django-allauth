@@ -10,8 +10,8 @@ def send_otp_by_mail(user, state):
     otp = state.get("otp")
     if not otp:
         otp = get_adapter().generate_otp()
-        state["otp"] = otp
         email = EmailAddress.objects.get_primary_email(user)
+        state.update({"otp": otp, "email": email})
         account_adapter = get_account_adapter()
         account_adapter.send_mail("mfa/email/otp_login", email, {"otp": otp})
         account_adapter.add_message(
@@ -22,6 +22,13 @@ def send_otp_by_mail(user, state):
         )
 
 
-def validate_code(code, state):
+def validate_code(user, state, code):
     otp = state.get("otp")
-    return otp and code == otp
+    ret = otp and code == otp
+    if ret:
+        try:
+            address = EmailAddress.objects.get_for_user(user, state["email"])
+            address.set_verified()
+        except EmailAddress.DoesNotExist:
+            pass
+    return ret
