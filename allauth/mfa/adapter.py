@@ -71,7 +71,7 @@ class DefaultMFAAdapter:
         return True
 
     def generate_otp(self):
-        return str(random.randint(0, (10**6) - 1))
+        return "%06d" % random.randint(0, (10**6) - 1)
 
 
 def get_adapter():
