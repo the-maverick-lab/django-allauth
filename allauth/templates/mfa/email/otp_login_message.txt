@@ -1,0 +1,6 @@
+{% extends "account/email/base_message.txt" %}
+{% load i18n %}
+
+{% block content %}{% autoescape off %}{% blocktrans %}
+{{ otp }}
+{% endblocktrans %}{% endautoescape %}{% endblock content %}

@@ -5,7 +5,7 @@ from allauth.account import app_settings as account_settings
 from allauth.account.adapter import get_adapter as get_account_adapter
 from allauth.account.models import EmailAddress
 from allauth.core import context, ratelimit
-from allauth.mfa import totp
+from allauth.mfa import app_settings, otp, totp
 from allauth.mfa.adapter import get_adapter
 from allauth.mfa.models import Authenticator
 from allauth.mfa.utils import post_authentication
@@ -36,16 +36,27 @@ class AuthenticateForm(forms.Form):
                     get_account_adapter().error_messages["too_many_login_attempts"]
                 )
 
+        passed = False
+        self.authenticator = None
+
         code = self.cleaned_data["code"]
         for auth in Authenticator.objects.filter(user=self.user):
             if auth.wrap().validate_code(code):
                 self.authenticator = auth
-                ratelimit.clear(context.request, action="login_failed", user=self.user)
-                return code
+                passed = True
+                break
+        if not passed and app_settings.EMAIL_OTP:
+            passed = otp.validate_code(code)
+
+        if passed:
+            ratelimit.clear(context.request, action="login_failed", user=self.user)
+            return code
+
         raise forms.ValidationError(get_adapter().error_messages["incorrect_code"])
 
     def save(self):
-        post_authentication(context.request, self.authenticator)
+        if self.authenticator:
+            post_authentication(context.request, self.authenticator)
 
 
 class ActivateTOTPForm(forms.Form):

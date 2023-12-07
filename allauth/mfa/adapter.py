@@ -1,3 +1,5 @@
+import random
+
 from django.utils.translation import gettext_lazy as _
 
 from allauth import app_settings as allauth_settings
@@ -67,6 +69,9 @@ class DefaultMFAAdapter:
 
     def can_delete_authenticator(self, authenticator):
         return True
+
+    def generate_otp(self):
+        return str(random.randint(0, (10**6) - 1))
 
 
 def get_adapter():

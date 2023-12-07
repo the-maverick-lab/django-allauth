@@ -40,8 +40,13 @@ class AppSettings(object):
         return self._setting("TOTP_ISSUER", "")
 
     @property
+    def EMAIL_OTP(self):
+        return self._setting("EMAIL_OTP", False)
+
+    @property
     def SUPPORTED_TYPES(self):
-        return []
+        if self.EMAIL_OTP:
+            return []
         dflt = ["recovery_codes", "totp"]
         return self._setting("SUPPORTED_TYPES", dflt)
 

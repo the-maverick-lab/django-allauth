@@ -34,8 +34,9 @@ class AuthenticateView(FormView):
 
     def dispatch(self, request, *args, **kwargs):
         self.stage = LoginStageController.enter(request, AuthenticateStage.key)
-        if not self.stage or not is_mfa_enabled(
-            self.stage.login.user, [Authenticator.Type.TOTP]
+        if not self.stage or (
+            not is_mfa_enabled(self.stage.login.user, [Authenticator.Type.TOTP])
+            and not app_settings.EMAIL_OTP
         ):
             return HttpResponseRedirect(reverse("account_login"))
         return super().dispatch(request, *args, **kwargs)
