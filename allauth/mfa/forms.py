@@ -21,6 +21,7 @@ class AuthenticateForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user")
+        self.stage = kwargs.pop("stage", None)
         super().__init__(*args, **kwargs)
 
     def clean_code(self):
@@ -45,8 +46,8 @@ class AuthenticateForm(forms.Form):
                 self.authenticator = auth
                 passed = True
                 break
-        if not passed and app_settings.EMAIL_OTP:
-            passed = otp.validate_code(code)
+        if not passed and app_settings.EMAIL_OTP and self.stage:
+            passed = otp.validate_code(code, self.stage.state)
 
         if passed:
             ratelimit.clear(context.request, action="login_failed", user=self.user)

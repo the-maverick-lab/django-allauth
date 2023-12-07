@@ -44,6 +44,7 @@ class AuthenticateView(FormView):
     def get_form_kwargs(self):
         ret = super().get_form_kwargs()
         ret["user"] = self.stage.login.user
+        ret["stage"] = self.stage
         return ret
 
     def form_valid(self, form):

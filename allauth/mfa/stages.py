@@ -14,6 +14,6 @@ class AuthenticateStage(LoginStage):
         if is_mfa_enabled(self.login.user):
             response = HttpResponseRedirect(reverse("mfa_authenticate"))
         elif app_settings.EMAIL_OTP:
-            otp.send_otp_by_mail(self.login.user)
+            otp.send_otp_by_mail(self.login.user, self.state)
             response = HttpResponseRedirect(reverse("mfa_authenticate"))
         return response, cont
