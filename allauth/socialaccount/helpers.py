@@ -207,6 +207,12 @@ def _add_social_account(request, sociallogin):
 
 def complete_social_login(request, sociallogin):
     flows.signup.clear_pending_signup(request)
+    if sociallogin.is_headless:
+        from allauth.headless.socialaccount import internal
+
+        return internal.complete_social_login(
+            request, sociallogin, _complete_social_login
+        )
     return _complete_social_login(request, sociallogin)
 
 
