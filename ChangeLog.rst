@@ -1,3 +1,12 @@
+65.x.x (unreleased)
+********************
+
+Node worthy changes
+-------------------
+
+- Added new socialaccount provider: Klaviyo.
+
+
 65.16.0 (2026-04-13)
 ********************
 
