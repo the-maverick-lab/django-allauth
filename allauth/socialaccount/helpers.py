@@ -4,6 +4,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 
+from allauth import app_settings as allauth_settings
 from allauth.account import app_settings as account_settings, authentication
 from allauth.account.adapter import get_adapter as get_account_adapter
 from allauth.account.reauthentication import reauthenticate_then_callback
@@ -124,6 +125,17 @@ def render_authentication_error(
     extra_context=None,
 ):
     try:
+        if allauth_settings.HEADLESS_ENABLED:
+            from allauth.headless.socialaccount import internal
+
+            internal.on_authentication_error(
+                request,
+                provider=provider,
+                error=error,
+                exception=exception,
+                extra_context=extra_context,
+            )
+
         if extra_context is None:
             extra_context = {}
         get_adapter().on_authentication_error(
