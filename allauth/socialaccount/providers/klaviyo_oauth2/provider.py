@@ -15,7 +15,7 @@ class KlaviyoProvider(OAuth2Provider):
     oauth2_adapter_class = KlaviyoOAuth2Adapter
 
     def extract_uid(self, data):
-        return data.get("data", {})[0].get("id")
+        return data.get("data", [{}])[0].get("id")
 
     def get_default_scope(self):
         return ["accounts:read"]
