@@ -6,6 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils.http import urlencode
 
+from allauth.socialaccount import app_settings
 from allauth.socialaccount.providers.recharge.provider import RechargeProvider
 from tests.apps.socialaccount.base import OAuth2TestsMixin
 from tests.mocking import MockedResponse
@@ -30,7 +31,15 @@ class RechargeTests(OAuth2TestsMixin, TestCase):
         self.assertEqual(q["myshopify_domain"], ["acme.myshopify.com"])
         # The install URL fixes the callback URL and scopes at app
         # registration time, and the client ID is part of the URL path.
-        for param in ("client_id", "redirect_uri", "scope", "response_type", "state"):
+        for param in (
+            "client_id",
+            "redirect_uri",
+            "scope",
+            "response_type",
+            "state",
+            "code_challenge",
+            "code_challenge_method",
+        ):
             self.assertNotIn(param, q)
 
         complete_url = reverse(f"{self.provider.id}_callback")
@@ -90,3 +99,23 @@ class RechargeTests(OAuth2TestsMixin, TestCase):
 
     def get_expected_to_str(self):
         return "Acme"
+
+    def test_only_store_domain_reaches_install_url(self):
+        """PKCE parameters and configured AUTH_PARAMS must not leak onto the
+        install URL -- it only takes the store-domain parameter."""
+        provider_settings = app_settings.PROVIDERS.get(self.app.provider, {}).copy()
+        provider_settings["AUTH_PARAMS"] = {"foo": "bar"}
+        provider_settings["OAUTH_PKCE_ENABLED"] = True
+        with self.settings(
+            SOCIALACCOUNT_PROVIDERS={self.app.provider: provider_settings}
+        ):
+            resp = self.client.post(
+                reverse(f"{self.provider.id}_login")
+                + "?"
+                + urlencode(
+                    {"process": "login", "myshopify_domain": "acme.myshopify.com"}
+                )
+            )
+        self.assertEqual(resp.status_code, HTTPStatus.FOUND)
+        q = parse_qs(urlparse(resp["location"]).query)
+        self.assertEqual(q, {"myshopify_domain": ["acme.myshopify.com"]})

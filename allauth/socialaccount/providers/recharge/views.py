@@ -14,6 +14,10 @@ from allauth.socialaccount.providers.oauth2.views import (
 
 RECHARGE_API_VERSION = "2021-11"
 
+# The parameters carrying the store domain on the install URL, one per
+# ecommerce platform Recharge integrates with.
+STORE_DOMAIN_PARAMS = ("myshopify_domain", "mybigcommerce_domain", "shop_domain")
+
 
 class RechargeOAuth2Client(OAuth2Client):
     """
@@ -29,10 +33,12 @@ class RechargeOAuth2Client(OAuth2Client):
         # The install URL does not take ``redirect_uri``, ``scope``,
         # ``response_type`` or ``state`` parameters -- the callback URL and
         # scopes are fixed when the partner app is registered, and the
-        # ``client_id`` is part of the URL path. Only the extra parameters
-        # (the store domain, e.g. ``myshopify_domain``) are passed along.
-        if extra_params:
-            return f"{authorization_url}?{urlencode(extra_params)}"
+        # ``client_id`` is part of the URL path. Only the store-domain
+        # parameter is passed along; anything else that ends up in the extra
+        # parameters (PKCE challenge, configured ``AUTH_PARAMS``) is dropped.
+        params = {k: v for k, v in extra_params.items() if k in STORE_DOMAIN_PARAMS}
+        if params:
+            return f"{authorization_url}?{urlencode(params)}"
         return authorization_url
 
 

@@ -5,12 +5,10 @@ from django.http import HttpRequest
 from allauth.socialaccount import providers
 from allauth.socialaccount.providers.base import ProviderAccount
 from allauth.socialaccount.providers.oauth2.provider import OAuth2Provider
-from allauth.socialaccount.providers.recharge.views import RechargeOAuth2Adapter
-
-
-# The parameters carrying the store domain on the install URL, one per
-# ecommerce platform Recharge integrates with.
-STORE_DOMAIN_PARAMS = ("myshopify_domain", "mybigcommerce_domain", "shop_domain")
+from allauth.socialaccount.providers.recharge.views import (
+    STORE_DOMAIN_PARAMS,
+    RechargeOAuth2Adapter,
+)
 
 
 class RechargeAccount(ProviderAccount):
