@@ -8,6 +8,7 @@ from allauth.socialaccount.providers.oauth2.provider import OAuth2Provider
 from allauth.socialaccount.providers.recharge.views import (
     STORE_DOMAIN_PARAMS,
     RechargeOAuth2Adapter,
+    get_store_domain,
 )
 
 
@@ -46,6 +47,24 @@ class RechargeProvider(OAuth2Provider):
             if value:
                 ret[param] = value
         return ret
+
+    def redirect(
+        self, request: HttpRequest, process, next_url=None, data=None, **kwargs
+    ):
+        # Recharge does not round-trip a `state` parameter, so stash the store
+        # domain the install was started for; the callback view verifies it
+        # against the domain echoed back by Recharge (a one-time binding
+        # standing in for the state check).
+        auth_params = kwargs.get("auth_params")
+        if auth_params is None:
+            auth_params = self.get_auth_params()
+            kwargs["auth_params"] = auth_params
+        store_domain = get_store_domain(auth_params)
+        if store_domain:
+            kwargs["store_domain"] = store_domain
+        return super().redirect(
+            request, process, next_url=next_url, data=data, **kwargs
+        )
 
 
 provider_classes = [RechargeProvider]
