@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from django.core.exceptions import PermissionDenied
+from django.http import HttpRequest
 from django.utils.http import urlencode
 
 from allauth.socialaccount.adapter import get_adapter
+from allauth.socialaccount.helpers import render_authentication_error
 from allauth.socialaccount.models import SocialToken
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from allauth.socialaccount.providers.oauth2.views import (
@@ -17,6 +20,14 @@ RECHARGE_API_VERSION = "2021-11"
 # The parameters carrying the store domain on the install URL, one per
 # ecommerce platform Recharge integrates with.
 STORE_DOMAIN_PARAMS = ("myshopify_domain", "mybigcommerce_domain", "shop_domain")
+
+
+def get_store_domain(params) -> str | None:
+    for param in STORE_DOMAIN_PARAMS:
+        value = params.get(param)
+        if value:
+            return value
+    return None
 
 
 class RechargeOAuth2Client(OAuth2Client):
@@ -75,5 +86,24 @@ class RechargeOAuth2Adapter(OAuth2Adapter):
         return self.get_provider().sociallogin_from_response(request, extra_data)
 
 
+class RechargeOAuth2CallbackView(OAuth2CallbackView):
+    def _get_state(self, request: HttpRequest, provider):
+        state, resp = super()._get_state(request, provider)
+        if state is not None:
+            # Recharge does not round-trip a `state` parameter, so the store
+            # domain echoed on the callback is the one-time binding between
+            # this callback and the login that initiated it. Reject callbacks
+            # for a different store than the state was stashed for.
+            expected_domain = state.get("store_domain")
+            if expected_domain and expected_domain != get_store_domain(request.GET):
+                return None, render_authentication_error(
+                    request,
+                    provider,
+                    exception=PermissionDenied("Store domain mismatch"),
+                    extra_context={"state": state, "callback_view": self},
+                )
+        return state, resp
+
+
 oauth2_login = OAuth2LoginView.adapter_view(RechargeOAuth2Adapter)
-oauth2_callback = OAuth2CallbackView.adapter_view(RechargeOAuth2Adapter)
+oauth2_callback = RechargeOAuth2CallbackView.adapter_view(RechargeOAuth2Adapter)

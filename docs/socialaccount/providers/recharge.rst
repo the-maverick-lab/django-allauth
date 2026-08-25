@@ -36,7 +36,10 @@ ecommerce platform (``myshopify_domain``, ``mybigcommerce_domain`` or
     /accounts/recharge/login/?myshopify_domain=yourstore.myshopify.com
 
 Since Recharge does not round-trip a ``state`` parameter to the callback, the
-login state is matched based on the most recently issued state.
+login state is matched based on the most recently issued state. As a
+substitute one-time binding, the store domain the login was initiated for is
+stashed in the state, and the callback is rejected unless Recharge echoes the
+same store domain back.
 
 After the token exchange, the store is identified via the ``/store`` API
 resource (this requires the ``read_store`` scope on the app), whose stable

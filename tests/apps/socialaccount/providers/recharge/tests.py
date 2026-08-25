@@ -100,6 +100,30 @@ class RechargeTests(OAuth2TestsMixin, TestCase):
     def get_expected_to_str(self):
         return "Acme"
 
+    def test_callback_rejects_store_domain_mismatch(self):
+        """Recharge does not round-trip a `state` parameter; the store domain
+        echoed on the callback is the one-time binding to the login that
+        initiated the flow, so a callback for a different (or missing) store
+        domain must not complete the login."""
+        complete_url = reverse(f"{self.provider.id}_callback")
+        for params in (
+            {"code": "test", "myshopify_domain": "evil.myshopify.com"},
+            {"code": "test"},
+        ):
+            with self.subTest(params=params):
+                self.client.post(
+                    reverse(f"{self.provider.id}_login")
+                    + "?"
+                    + urlencode(
+                        {
+                            "process": "login",
+                            "myshopify_domain": "acme.myshopify.com",
+                        }
+                    )
+                )
+                resp = self.client.get(complete_url, params)
+                self.assertTemplateUsed(resp, "socialaccount/authentication_error.html")
+
     def test_only_store_domain_reaches_install_url(self):
         """PKCE parameters and configured AUTH_PARAMS must not leak onto the
         install URL -- it only takes the store-domain parameter."""
